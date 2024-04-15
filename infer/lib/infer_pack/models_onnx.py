@@ -152,11 +152,6 @@ class ResidualCouplingBlock(nn.Module):
                 x = flow(x, x_mask, g=g, reverse=reverse)
         return x
 
-    def remove_weight_norm(self):
-        for i in range(self.n_flows):
-            self.flows[i * 2].remove_weight_norm()
-
-
 class PosteriorEncoder(nn.Module):
     def __init__(
         self,
@@ -197,10 +192,6 @@ class PosteriorEncoder(nn.Module):
         m, logs = torch.split(stats, self.out_channels, dim=1)
         z = (m + torch.randn_like(m) * torch.exp(logs)) * x_mask
         return z, m, logs, x_mask
-
-    def remove_weight_norm(self):
-        self.enc.remove_weight_norm()
-
 
 class Generator(torch.nn.Module):
     def __init__(
@@ -270,13 +261,6 @@ class Generator(torch.nn.Module):
         x = torch.tanh(x)
 
         return x
-
-    def remove_weight_norm(self):
-        for l in self.ups:
-            remove_weight_norm(l)
-        for l in self.resblocks:
-            l.remove_weight_norm()
-
 
 class SineGen(torch.nn.Module):
     """Definition of sine generator
@@ -515,19 +499,11 @@ class GeneratorNSF(torch.nn.Module):
         x = torch.tanh(x)
         return x
 
-    def remove_weight_norm(self):
-        for l in self.ups:
-            remove_weight_norm(l)
-        for l in self.resblocks:
-            l.remove_weight_norm()
-
-
 sr2sr = {
     "32k": 32000,
     "40k": 40000,
     "48k": 48000,
 }
-
 
 class SynthesizerTrnMsNSFsidM(nn.Module):
     def __init__(
@@ -623,11 +599,6 @@ class SynthesizerTrnMsNSFsidM(nn.Module):
         logger.debug(
             f"gin_channels: {gin_channels}, self.spk_embed_dim: {self.spk_embed_dim}"
         )
-
-    def remove_weight_norm(self):
-        self.dec.remove_weight_norm()
-        self.flow.remove_weight_norm()
-        self.enc_q.remove_weight_norm()
 
     def construct_spkmixmap(self, n_speaker):
         self.speaker_map = torch.zeros((n_speaker, 1, 1, self.gin_channels))
